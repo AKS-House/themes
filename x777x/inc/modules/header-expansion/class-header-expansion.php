@@ -1,40 +1,35 @@
 <?php
-/**
- * Module: Header & Footer Expansion
- * Description: Добавляет кастомные зоны виджетов и дополнительные HTML элементы в конструктор Blocksy.
- */
-
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+if ( ! defined( 'ABSPATH' ) ) exit;
 
 class X777X_Header_Expansion {
 
+	// Количество добавляемых виджетов
+	private $widgets_count = 5;
+
 	public function __construct() {
-		// 1. Регистрация зон виджетов (Сайдбаров)
+		// 1. Регистрация зон виджетов (сайдбаров) в WP
 		add_action( 'widgets_init', array( $this, 'register_custom_sidebars' ) );
 
-		// 2. Шорткод для вывода виджетов
-		add_shortcode( 'x777x_widget', array( $this, 'render_widget_area' ) );
+		// 2. Регистрация элементов в Конструкторе Хедера
+		add_filter( 'blocksy:header:builder:elements', array( $this, 'register_builder_elements' ) );
 
-		// 3. Добавление элементов в конструктор (Header & Footer)
-		add_filter( 'blocksy:header:builder:elements', array( $this, 'add_builder_elements' ), 20 );
-		add_filter( 'blocksy:footer:builder:elements', array( $this, 'add_builder_elements' ), 20 );
+		// 3. Регистрация опций для этих элементов (при клике на шестеренку)
+		add_filter( 'blocksy:options:builder:elements', array( $this, 'register_builder_options' ) );
+
+		// 4. Отрисовка элемента в Хедере
+		add_action( 'blocksy:header:render:item', array( $this, 'render_builder_item' ), 10, 2 );
 	}
 
 	/**
-	 * 1. Создаем 10 дополнительных зон для виджетов
-	 * (Можно увеличить число $count, если нужно больше)
+	 * 1. Создаем зоны виджетов в Админке -> Внешний вид -> Виджеты
 	 */
 	public function register_custom_sidebars() {
-		$count = 10; 
-
-		for ( $i = 1; $i <= $count; $i++ ) {
+		for ( $i = 1; $i <= $this->widgets_count; $i++ ) {
 			register_sidebar( array(
 				'name'          => 'Кастомный Виджет ' . $i,
 				'id'            => 'x777x-custom-widget-' . $i,
-				'description'   => 'Зона для вставки в Header или Footer через конструктор.',
-				'before_widget' => '<div id="%1$s" class="widget %2$s x777x-widget-content">',
+				'description'   => 'Эта зона используется в конструкторе шапки (Custom Widget ' . $i . ')',
+				'before_widget' => '<div id="%1$s" class="widget x777x-header-widget %2$s">',
 				'after_widget'  => '</div>',
 				'before_title'  => '<h4 class="widget-title">',
 				'after_title'   => '</h4>',
@@ -43,61 +38,132 @@ class X777X_Header_Expansion {
 	}
 
 	/**
-	 * 2. Логика шорткода [x777x_widget id="1"]
+	 * 2. Добавляем иконки ("кубики") в палитру Конструктора Хедера
 	 */
-	public function render_widget_area( $atts ) {
-		$atts = shortcode_atts( array(
-			'id' => '1',
-		), $atts );
-
-		$sidebar_id = 'x777x-custom-widget-' . $atts['id'];
-
-		ob_start();
-		if ( is_active_sidebar( $sidebar_id ) ) {
-			dynamic_sidebar( $sidebar_id );
-		} else {
-			// Видно только админам для отладки
-			if ( current_user_can( 'administrator' ) ) {
-				echo '<div style="opacity: 0.5; border: 1px dashed currentColor; padding: 5px; font-size: 10px;">Виджет ' . esc_html( $atts['id'] ) . ' пуст</div>';
-			}
+	public function register_builder_elements( $elements ) {
+		for ( $i = 1; $i <= $this->widgets_count; $i++ ) {
+			$id = 'x777x_widget_' . $i;
+			
+			$elements[ $id ] = array(
+				'title' => 'Виджет ' . $i,
+				// 'group' важен для группировки в палитре (например, рядом с HTML элементами)
+				'group' => 'elements', 
+				// Конфигурация устройств, где элемент доступен
+				'config' => array(
+					'devices' => ['desktop', 'tablet', 'mobile'],
+				),
+				// Указываем, что клонирование отключено, это уникальные элементы
+				'clone' => false, 
+			);
 		}
-		return ob_get_clean();
+		return $elements;
 	}
 
 	/**
-	 * 3. Добавляем клоны HTML-элемента в Конструктор Blocksy
+	 * 3. Настройки элемента (всплывающее окно при клике в конструкторе)
 	 */
-	public function add_builder_elements( $elements ) {
-		// Количество дополнительных элементов в конструкторе
-		$count = 5; 
+	public function register_builder_options( $options ) {
+		for ( $i = 1; $i <= $this->widgets_count; $i++ ) {
+			$id = 'x777x_widget_' . $i;
 
-		// Берем настройки стандартного HTML элемента Blocksy как базу
-		// В бесплатной версии он обычно называется 'text' или 'html'
-		$base_config = isset( $elements['text'] ) ? $elements['text'] : [];
+			$options[ $id ] = array(
+				'title' => 'Виджет ' . $i,
+				'options' => array(
+					// Вкладка Общие
+					'general' => array(
+						'type' => 'tab',
+						'title' => __( 'General', 'blocksy' ),
+						'options' => array(
+							// Информационное сообщение
+							'info_text' => array(
+								'type' => 'ct-message',
+								'text' => sprintf( 'Контент этого элемента управляется в разделе <a href="%s" target="_blank">Внешний вид -> Виджеты</a> (Зона: Кастомный Виджет %d).', admin_url('widgets.php'), $i ),
+							),
+							// Разделитель
+							blocksy_rand_md5() => array( 'type' => 'ct-divider' ),
+							
+							// Настройка выравнивания (полезно для виджетов)
+							'horizontal_alignment' => array(
+								'type' => 'ct-radio',
+								'label' => __( 'Horizontal Alignment', 'blocksy' ),
+								'view' => 'text',
+								'design' => 'block',
+								'responsive' => true,
+								'attr' => array( 'data-type' => 'alignment' ),
+								'value' => 'CT_CSS_SKIP_RULE',
+								'choices' => array(
+									'left' => '',
+									'center' => '',
+									'right' => '',
+								),
+							),
+						),
+					),
+					// Вкладка Дизайн (стандартные отступы и видимость)
+					'design' => array(
+						'type' => 'tab',
+						'title' => __( 'Design', 'blocksy' ),
+						'options' => array(
+							'visibility' => array(
+								'type' => 'ct-visibility',
+								'label' => __( 'Visibility', 'blocksy' ),
+								'design' => 'block',
+								'allow_empty' => true,
+							),
+							'margin' => array(
+								'type' => 'ct-spacing',
+								'label' => __( 'Margin', 'blocksy' ),
+								'responsive' => true,
+								'divider' => 'top',
+								'value' => blocksy_spacing_value(),
+							),
+						),
+					),
+				),
+			);
+		}
+		return $options;
+	}
 
-		if ( empty( $base_config ) ) {
-			// Если вдруг ключ изменился, пробуем html
-			$base_config = isset( $elements['html'] ) ? $elements['html'] : [];
+	/**
+	 * 4. Логика вывода (HTML) в шапке
+	 * * @param string $id ID элемента (напр. x777x_widget_1)
+	 * @param array $atts Настройки элемента, полученные из кастомайзера
+	 */
+	public function render_builder_item( $id, $atts ) {
+		// Проверяем, наш ли это виджет
+		if ( strpos( $id, 'x777x_widget_' ) === false ) {
+			return;
 		}
 
-		if ( empty( $base_config ) ) {
-			return $elements; // Если не нашли базу, ничего не делаем, чтобы не сломать
+		// Извлекаем номер виджета из ID
+		$widget_number = str_replace( 'x777x_widget_', '', $id );
+		$sidebar_id = 'x777x-custom-widget-' . $widget_number;
+
+		// Проверяем, активен ли сайдбар в админке
+		if ( ! is_active_sidebar( $sidebar_id ) ) {
+			// Можно вывести заглушку для админа, если виджет пустой
+			if ( is_customize_preview() ) {
+				echo '<div class="ct-header-text">Виджет ' . $widget_number . ' (пусто)</div>';
+			}
+			return;
 		}
 
-		for ( $i = 1; $i <= $count; $i++ ) {
-			// Создаем копию конфигурации
-			$new_element = $base_config;
-			
-			// Меняем название, чтобы вы видели их в списке
-			$new_element['title'] = 'HTML / Виджет ' . $i;
-			$new_element['description'] = 'Доп. блок. Вставьте шорткод [x777x_widget id="' . $i . '"]';
-			
-			// Добавляем уникальный элемент в массив
-			// Ключ должен быть уникальным, например text_custom_1
-			$elements['text_x777x_' . $i] = $new_element;
-		}
+		// Обработка видимости (Visibility options)
+		// Blocksy использует вспомогательную функцию для генерации классов видимости
+		$visibility = blocksy_default_akg( 'visibility', $atts, array(
+			'desktop' => true,
+			'tablet' => true,
+			'mobile' => true,
+		) );
+		
+		$classes = 'ct-header-element x777x-widget-area ';
+		$classes .= blocksy_visibility_classes( $visibility );
 
-		return $elements;
+		// Вывод HTML
+		echo '<div class="' . esc_attr( $classes ) . '" data-id="' . esc_attr( $id ) . '">';
+		dynamic_sidebar( $sidebar_id );
+		echo '</div>';
 	}
 }
 
