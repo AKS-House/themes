@@ -5,6 +5,19 @@
  * Версия 5.1: Устранено дублирование Canonical ссылки с помощью фильтрации готового HTML.
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+// !!! ВАЖНОЕ ИСПРАВЛЕНИЕ: ЗАПУСК БУФЕРИЗАЦИИ !!!
+// Так как мы убрали запуск из asset-loader.php, он должен быть здесь.
+add_action( 'template_redirect', function() {
+    // Запускаем буфер только на фронтенде и если функция маскировки существует
+    if ( ! is_admin() && function_exists('bigemot_final_masking_callback') ) {
+        ob_start( 'bigemot_final_masking_callback' );
+    }
+}, 1 );
+
 // ФУНКЦИЯ ДЛЯ УДАЛЕНИЯ ДУБЛИРУЮЩИХСЯ CANONICAL ССЫЛОК (оставляет только первую)
 function bigemot_remove_duplicate_canonical($html) {
     // Регулярное выражение для поиска <link rel="canonical" ... >
@@ -29,7 +42,7 @@ function bigemot_remove_duplicate_canonical($html) {
                 // Удаляем все остальные вхождения canonical тега из этой части
                 $after_first_cleaned = preg_replace($canonical_regex, '', $after_first);
                 
-                // Собираем HTML обратно: (HTML до первого тега) + (Первый тег) + (Очищенный HTML после)
+                // Собираем HTML обратно: часть до первого тега + первый тег + очищенная часть
                 $html = substr($html, 0, $start_search_pos) . $after_first_cleaned;
             }
         }
@@ -38,45 +51,32 @@ function bigemot_remove_duplicate_canonical($html) {
     return $html;
 }
 
-
-// ФУНКЦИЯ ДЛЯ УДАЛЕНИЯ ДУБЛИРУЮЩИХСЯ META-ТЕГОВ И ОЧИСТКИ КОДА
-function bigemot_strip_meta_tags($html) {
-    // 1. Список property/name атрибутов мета-тегов, которые нужно удалить.
-    $meta_properties_to_remove = [
-        // Дубликаты OG
-        'og:locale', 'og:type', 'og:title', 'og:description', 'og:url', 
-        'og:site_name', 'og:image',
-        // Дубликаты Twitter
-        'twitter:card', 'twitter:title', 'twitter:description', 
-        'twitter:site', 'twitter:image',
-        // Другие теги
-        'og:image:width', 'og:image:height', 'article:published_time',
-        'article:modified_time', 'og:updated_time', 'article:tag', 
-        'article:section',
-    ];
-
-    foreach ($meta_properties_to_remove as $prop) {
-        $safe_prop = preg_quote($prop, '/');
-        
-        // Регулярное выражение для мета-тегов с property="..."
-        $regex_prop = '/<meta\s+[^>]*property=["\']' . $safe_prop . '["\'][^>]*>/i';
-        $html = preg_replace($regex_prop, '', $html);
-
-        // Регулярное выражение для мета-тегов с name="..."
-        $regex_name = '/<meta\s+[^>]*name=["\']' . $safe_prop . '["\'][^>]*>/i';
-        $html = preg_replace($regex_name, '', $html);
-    }
+// ФУНКЦИЯ ОЧИСТКИ META-ТЕГОВ
+function bigemot_strip_meta_tags( $html ) {
+    // Удаляем meta generator (версия WP и т.д.)
+    $html = preg_replace( '/<meta name="generator" content=".*?" \/>/i', '', $html );
     
-    // 2. Очистка лишних пустых строк, оставшихся после удаления мета-тегов
-    // Заменяем 3 и более новых строк (включая CR/LF) на 2 новые строки.
-    $html = preg_replace('/(\R){3,}/', "\n\n", $html); 
+    // Удаляем wlwmanifest
+    $html = preg_replace( '/<link rel="wlwmanifest" type="application\/wlwmanifest\+xml" href=".*?" \/>/i', '', $html );
+    
+    // Удаляем EditURI (RSD)
+    $html = preg_replace( '/<link rel="EditURI" type="application\/rsd\+xml" title="RSD" href=".*?" \/>/i', '', $html );
+    
+    // Удаляем shortlink
+    $html = preg_replace( '/<link rel="shortlink" href=".*?" \/>/i', '', $html );
+
+    // Удаляем dns-prefetch s.w.org (стандартный WP)
+    $html = preg_replace( '/<link rel="dns-prefetch" href="\/\/s\.w\.org" \/>/i', '', $html );
+    
+    // Очищаем множественные переносы строк для чистоты кода (опционально)
+    $html = preg_replace('/[\r\n]{3,}/', "\n\n", $html); 
     
     return $html;
 }
 
 
 // ФУНКЦИЯ ФИНАЛЬНОЙ МАСКИРОВКИ
-// Эта функция вызывается из asset-loader.php
+// Эта функция теперь вызывается через ob_start() в начале этого файла
 function bigemot_final_masking_callback( $html ) {
     
     // !!! ШАГ 1: УДАЛЕНИЕ ДУБЛИРУЮЩИХСЯ CANONICAL ССЫЛОК
@@ -90,36 +90,25 @@ function bigemot_final_masking_callback( $html ) {
         // 1. Замена путей ядра WP
         'wp-content/' => 'smartx/', 
         'wp-includes/' => 'police/',
+        
         // 2. Маскировка REST API
         'wp-json/' => 'x-api-json/',
-        // 3. Маскировка стандартных ID
+        
+        // 3. Маскировка стандартных ID и классов WP
         'wp-block-library-css' => 'bglib-css',
-        'wp-dom-ready-js' => 'bg-dom-js',
-        'wp-hooks-js' => 'bg-hooks-js',
-        'wp-i11n-js' => 'bg-i11n-js', 
-        'wp-a11y-js' => 'bg-a11y-js',
-        'heartbeat-js' => 'bg-hb-js', 
-        'jquery-core-js' => 'bg-jq-js',
+        'wp-dom-ready-js'      => 'bg-dom-js',
+        'wp-hooks-js'          => 'bg-hooks-js',
+        'wp-i11n-js'           => 'bg-i11n-js', 
+        'wp-a11y-js'           => 'bg-a11y-js',
+        'heartbeat-js'         => 'hb-js',
+        'wp-auth-check-js'     => 'auth-chk-js',
+        'wp-playlist-js'       => 'pl-list-js',
+        'wp-embed-js'          => 'em-js',
+        'wp-emoji-release.min.js' => 'emj.js',
     );
 
-    $html = str_replace(array_keys($replacements), array_values($replacements), $html);
+    // Выполняем замену всех ключей на значения в массиве
+    $html = str_replace( array_keys( $replacements ), array_values( $replacements ), $html );
 
-    // Возвращаем очищенный HTML
     return $html;
 }
-
-/**
- * Очистка классов в теге <body>, чтобы скрыть следы WP.
- */
-add_filter( 'body_class', function ( $classes ) {
-    $forbidden_classes = array(
-        'wp-embed-responsive',
-        'wp-theme-blocksy',
-        'wp-child-theme-x777x',
-        'wp-custom-logo',
-    );
-
-    $classes = array_diff( $classes, $forbidden_classes );
-
-    return $classes;
-}, 999 );
