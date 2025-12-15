@@ -1,0 +1,37 @@
+/* Кнопка */
+.x777x-toggle-btn {
+    background: transparent;
+    border: 2px solid transparent;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.3s ease;
+    z-index: 9999;
+    /* Цвет берется из активной палитры */
+    color: var(--theme-palette-color-1); 
+}
+
+.x777x-toggle-btn:hover {
+    background-color: rgba(125, 125, 125, 0.1);
+    transform: scale(1.1);
+}
+
+.x777x-toggle-btn svg { width: 22px; height: 22px; }
+
+/* Иконки */
+.x777x-toggle-btn .x777x-icon-sun { display: block; }
+.x777x-toggle-btn .x777x-icon-moon { display: none; }
+
+/* Светлая тема */
+body.x777x-light-mode .x777x-toggle-btn .x777x-icon-sun { display: none; }
+body.x777x-light-mode .x777x-toggle-btn .x777x-icon-moon { display: block; }
+
+/* Плавный переход для всех элементов */
+body, header, footer, div, p, span, a, h1, h2, h3, .site-header, .site-footer {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
