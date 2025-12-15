@@ -80,65 +80,66 @@ class X777X_Theme_Toggle {
 		// Получаем настройки
 		?>
 		<style id="x777x-light-mode-full-css">
-			body.x777x-light-mode {
+			/* Повышаем вес селектора (html body...), чтобы перебить :root темы без !important */
+			html body.x777x-light-mode {
 				
 				/* --- 1. Глобальная Палитра --- */
 				<?php for ( $i = 1; $i <= 8; $i++ ) : ?>
-					--theme-palette-color-<?php echo $i; ?>: <?php echo get_theme_mod( 'x777x_light_p' . $i, '#ffffff' ); ?> !important;
+					--theme-palette-color-<?php echo $i; ?>: <?php echo get_theme_mod( 'x777x_light_p' . $i, '#ffffff' ); ?>;
 				<?php endfor; ?>
 
 				/* Ссылки (привязка к палитре) */
-				--theme-link-initial-color: var(--theme-palette-color-1) !important;
-				--theme-link-hover-color: var(--theme-palette-color-2) !important;
-				--theme-headings-color: var(--theme-palette-color-3) !important;
-				--theme-text-color: var(--theme-palette-color-4) !important;
-				--theme-border-color: var(--theme-palette-color-5) !important;
+				--theme-link-initial-color: var(--theme-palette-color-1);
+				--theme-link-hover-color: var(--theme-palette-color-2);
+				--theme-headings-color: var(--theme-palette-color-3);
+				--theme-text-color: var(--theme-palette-color-4);
+				--theme-border-color: var(--theme-palette-color-5);
 
 				/* --- 2. Фон Сайта --- */
-				--theme-body-background-color: <?php echo get_theme_mod('x777x_light_body_bg', '#ffffff'); ?> !important;
-				background-color: var(--theme-body-background-color) !important;
-				color: var(--theme-text-color) !important;
+				--theme-body-background-color: <?php echo get_theme_mod('x777x_light_body_bg', '#ffffff'); ?>;
+				background-color: var(--theme-body-background-color);
+				color: var(--theme-text-color);
 
 				/* --- 3. Карточки --- */
-				--theme-card-background-color: <?php echo get_theme_mod('x777x_light_card_bg', '#ffffff'); ?> !important;
-				--theme-box-shadow-color: <?php echo get_theme_mod('x777x_light_card_shadow', 'rgba(0,0,0,0.1)'); ?> !important;
+				--theme-card-background-color: <?php echo get_theme_mod('x777x_light_card_bg', '#ffffff'); ?>;
+				--theme-box-shadow-color: <?php echo get_theme_mod('x777x_light_card_shadow', 'rgba(0,0,0,0.1)'); ?>;
 			}
 
 			/* Применение фона к карточкам Blocksy */
-			body.x777x-light-mode .entry-card,
-			body.x777x-light-mode article.post,
-			body.x777x-light-mode .woocommerce-product-gallery,
-			body.x777x-light-mode .summary {
-				background-color: var(--theme-card-background-color) !important;
-				box-shadow: 0px 5px 20px var(--theme-box-shadow-color) !important;
+			html body.x777x-light-mode .entry-card,
+			html body.x777x-light-mode article.post,
+			html body.x777x-light-mode .woocommerce-product-gallery,
+			html body.x777x-light-mode .summary {
+				background-color: var(--theme-card-background-color);
+				box-shadow: 0px 5px 20px var(--theme-box-shadow-color);
 			}
 
 			/* --- 4. Шапка (Header) --- */
 			/* Top Row */
-			body.x777x-light-mode .site-header [data-row*="top"] {
-				background-color: <?php echo get_theme_mod('x777x_light_header_top_bg', 'transparent'); ?> !important;
+			html body.x777x-light-mode .site-header [data-row*="top"] {
+				background-color: <?php echo get_theme_mod('x777x_light_header_top_bg', 'transparent'); ?>;
 			}
 			/* Main Row */
-			body.x777x-light-mode .site-header [data-row*="middle"] {
-				background-color: <?php echo get_theme_mod('x777x_light_header_main_bg', '#ffffff'); ?> !important;
+			html body.x777x-light-mode .site-header [data-row*="middle"] {
+				background-color: <?php echo get_theme_mod('x777x_light_header_main_bg', '#ffffff'); ?>;
 			}
 			/* Bottom Row */
-			body.x777x-light-mode .site-header [data-row*="bottom"] {
-				background-color: <?php echo get_theme_mod('x777x_light_header_bottom_bg', 'transparent'); ?> !important;
+			html body.x777x-light-mode .site-header [data-row*="bottom"] {
+				background-color: <?php echo get_theme_mod('x777x_light_header_bottom_bg', 'transparent'); ?>;
 			}
 
 			/* --- 5. Подвал (Footer) --- */
 			/* Top */
-			body.x777x-light-mode .site-footer [data-row*="top"] {
-				background-color: <?php echo get_theme_mod('x777x_light_footer_top_bg', '#f5f5f5'); ?> !important;
+			html body.x777x-light-mode .site-footer [data-row*="top"] {
+				background-color: <?php echo get_theme_mod('x777x_light_footer_top_bg', '#f5f5f5'); ?>;
 			}
 			/* Middle */
-			body.x777x-light-mode .site-footer [data-row*="middle"] {
-				background-color: <?php echo get_theme_mod('x777x_light_footer_middle_bg', '#f5f5f5'); ?> !important;
+			html body.x777x-light-mode .site-footer [data-row*="middle"] {
+				background-color: <?php echo get_theme_mod('x777x_light_footer_middle_bg', '#f5f5f5'); ?>;
 			}
 			/* Bottom */
-			body.x777x-light-mode .site-footer [data-row*="bottom"] {
-				background-color: <?php echo get_theme_mod('x777x_light_footer_bottom_bg', '#ffffff'); ?> !important;
+			html body.x777x-light-mode .site-footer [data-row*="bottom"] {
+				background-color: <?php echo get_theme_mod('x777x_light_footer_bottom_bg', '#ffffff'); ?>;
 			}
 		</style>
 		<?php
